@@ -1,39 +1,91 @@
+import { format, formatDistanceToNow } from "date-fns";
 import { Avatar } from "./Avatar";
 import { Comment } from "./Comment";
 import styles from "./Post.module.css";
+import { ptBR } from "date-fns/locale";
+import { useState } from "react";
 
-export function Post() {
+export function Post({author, content, publishedAt}) {
+    const [comments, setComments] = useState(["Post testandoo",]);
+    const [newComment, setNewComment] = useState("");
+
+    const publishedDateFormat = format(publishedAt, "dd' de 'LLLL' às 'HH:mm'h'", {locale: ptBR});
+
+    const publishedDateRelativeNow = formatDistanceToNow(publishedAt, {
+        locale: ptBR,
+        addSuffix: true,
+    });
+
+    function handleCreateComment() {
+        event.preventDefault(); //previne que a página recarregue
+        setComments([...comments, newComment]); //manipula a variável array comments e adiciona newComment
+        setNewComment(""); //limpa o campo textarea
+    }
+
+    function handleNewComment() {
+        event.target.setCustomValidity("");
+        setNewComment(event.target.value);
+    }
+
+    function deleteComment(deletedComments) {
+        
+        const filteredActiveComments = comments.filter(comment => {
+            return comment !== deletedComments;
+        });
+        setComments(filteredActiveComments);
+    }
+
+    function handleNewCommentInvalid() {
+        event.target.setCustomValidity("Esse campo é obrigatório!");
+    }
+
+    const isNewCommentEmpty = newComment.length === 0;
+
     return(
         <article className={styles.post}>
             <header>
                 <div className={styles.author}>
-                    <Avatar src="https://github.com/nalitakao.png" />
+                    <Avatar src={author.avatarUrl} />
                     <div className={styles.authorInfo}>
-                        <strong>Nalita Kao</strong>
-                        <span>Web Developer</span>
+                        <strong>{author.name}</strong>
+                        <span>{author.role}</span>
                     </div>
                 </div>
 
-                <time title="5 de setembro às 14:45" dateTime="2024-05-09 14:45:07">Publicado há 1h</time>
+                <time title={publishedDateFormat} dateTime={publishedAt.toISOString()}>{publishedDateRelativeNow}</time>
             </header>
 
             <div className={styles.content}>
-                <p>Lorem ipsum dolor sit, </p>
-                <p>Amet consectetur adipisicing elit. Nisi cupiditate labore facilis, eligendi nulla tenetur corrupti laborum! Quae quis excepturi, fugit dicta tempore culpa est ea dolor esse amet!</p>
-                <p>Velit?</p>
+                {content.map(paragraph => (
+                    <p key={paragraph.content}>{paragraph.content}</p>
+                ))}
             </div>
 
-            <form className={styles.commentForm}>
+            <form onSubmit={handleCreateComment} className={styles.commentForm}>
                 <strong>Deixe seu feedback</strong>
-                <textarea placeholder="Deixe um comentário" />
+                <textarea 
+                    name="comment" 
+                    placeholder="Deixe um comentário" 
+                    value={newComment} 
+                    onChange={handleNewComment} 
+                    onInvalid={handleNewCommentInvalid}
+                    required
+                />
                 <footer>
-                    <button type="submit">Comentar</button>
+                    <button type="submit" disabled={isNewCommentEmpty}>Comentar</button>
                 </footer>
             </form>
 
             <div className={styles.commentList}>
-                <Comment />
-                <Comment />
+            {comments.map(comment => {
+            return (
+              <Comment
+                key={comment}
+                content={comment}
+                onDeleteComment={deleteComment}
+              />
+            );
+          })}
             </div>
         </article>
     )
